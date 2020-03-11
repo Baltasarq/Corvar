@@ -1,0 +1,49 @@
+<resources>
+    <string name="app_name">Corvar</string>
+
+    <!-- Activity titles -->
+    <string name="title_activity_check_results">Check Results</string>
+
+    <!-- Actions -->
+    <string name="action_search_devices">Scan devices</string>
+    <string name="action_measure_heartvar">Measure heart variability</string>
+    <string name="action_chk_results">Check results</string>
+    <string name="action_stop">Stop</string>
+
+    <!-- Labels -->
+    <string name="lbl_device">Device</string>
+    <string name="lbl_date">Date</string>
+    <string name="lbl_time">Time</string>
+    <string name="lbl_tag">Tag</string>
+    <string name="lbl_back">Back</string>
+    <string name="lbl_disconnected">Disconnected</string>
+    <string name="lbl_connected">Connected</string>
+    <string name="lbl_status">Status</string>
+    <string name="lbl_bpm">bpm</string>
+    <string name="lbl_rr">rr</string>
+    <string name="lbl_measurement">measurement</string>
+
+    <!-- Messages -->
+    <string name="msg_filtering_by_service">Filtering by services</string>
+    <string name="msg_device_found">device found</string>
+    <string name="msg_activate_bluetooth">Activate bluetooth</string>
+    <string name="msg_start_scan">Start scanning</string>
+    <string name="msg_stop_scan">Scanning stopped</string>
+    <string name="msg_finished_measurement">Measurement finished</string>
+
+    <!-- Errors -->
+    <string name="error_unknown_device">Unknown device</string>
+    <string name="error_no_hr">no HR profile</string>
+    <string name="error_no_bluetooth_permissions">no bluetooth permission granted</string>
+    <string name="error_no_bluetooth_supported">no bluetooth supported</string>
+
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+
+    <string name="hello_first_fragment">Hello first fragment</string>
+    <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <string name="title_activity_result_viewer">ResultViewer</string>
+</resources>
