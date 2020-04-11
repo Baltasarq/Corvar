@@ -1,7 +1,6 @@
 package com.devbaltasarq.corvar.core;
 
 import android.text.Html;
-import android.text.Spanned;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -18,7 +17,15 @@ import java.util.List;
 import java.util.Locale;
 
 public class ResultAnalyzer {
-    static String LOG_TAG = ResultAnalyzer.class.getSimpleName();
+    private static String LOG_TAG = ResultAnalyzer.class.getSimpleName();
+
+    // Stress level calculation constants
+    private static float STRESS_LEVEL_A1 = 1.0f;
+    private static float STRESS_LEVEL_A2 = 1.0f;
+    private static float STRESS_LEVEL_A3 = 1.0f;
+    private static float STDn = 50.0f;          // ms
+    private static float RMSn = 40.0f;          // ms
+    private static float FCn = 60.0f;           // bpm
 
     public ResultAnalyzer(String fileName)
     {
@@ -72,9 +79,12 @@ public class ResultAnalyzer {
                 Log.i( LOG_TAG,"Last value: "+ dataHRInterpX.get( dataHRInterpX.size() - 1 ) );
 
                 // Calculate stress level
+                this.valueRMS = this.calculateRMSSD( this.dataRR );
+                this.valueSTD = this.calculateSTD( this.dataRR );
+                this.valueMeanFC = this.calculateMean( this.dataRR );
                 this.calculateStress();
 
-                // Plots interpolated HR signal and data analysis
+                // Summarizes all the results
                 this.report += this.createReport();
             } else {
                 this.report += "Empty data.";
@@ -232,16 +242,16 @@ public class ResultAnalyzer {
 
         TEXT.append( "<br/><h3>HRV time-domain results</h3>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>Mean RR (AVNN)</b>: " );
-        TEXT.append( String.format( Locale.getDefault(), "%.2f", calculateMean(dataRR)) );
+        TEXT.append( String.format( Locale.getDefault(), "%.2f", this.valueMeanFC) );
         TEXT.append( " ms</p>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>STD RR (SDNN)</b>: " );
-        TEXT.append( String.format( Locale.getDefault(), "%.2f", calculateSTD(dataRR)) );
+        TEXT.append( String.format( Locale.getDefault(), "%.2f", this.valueSTD) );
         TEXT.append( " ms</p>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>pNN50</b>: " );
         TEXT.append( String.format( Locale.getDefault(), "%.2f", calculatePNN50(dataRR)) );
         TEXT.append( "%</p>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>rMSSD</b>: " );
-        TEXT.append( String.format( Locale.getDefault(), "%.2f", calculateRMSSD(dataRR)) );
+        TEXT.append( String.format( Locale.getDefault(), "%.2f", this.valueRMS) );
         TEXT.append( " ms</p>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>normHRV</b>: " );
         TEXT.append( String.format( Locale.getDefault(), "%.2f", calculateNormHRV(dataRR)) );
@@ -611,18 +621,28 @@ public class ResultAnalyzer {
         return segmentPadded;
     }
 
-    /** Calculates the stress level, returning a value between 0 and 1.
-     *  stress: a value between 0 (no stress at all) to 1 (very stressed).
-     */
+    /** Calculates the stress level, resulting in a value between -1 and >1. */
     private void calculateStress()
     {
-        this.stress = (float) Math.random();
+        this.stress = 0.33f * (
+                    STRESS_LEVEL_A1 * ( ( STDn - this.valueSTD ) / STDn )
+                    + STRESS_LEVEL_A2 * ( ( RMSn - this.valueRMS ) / RMSn )
+                    + STRESS_LEVEL_A3 * ( ( FCn - this.valueMeanFC ) / FCn ) );
     }
 
     public String getReport()
     {
         return this.report;
     }
+
+    /**
+     * Returns the calculated stress
+     * 0 or less (negative) : no stress at all.
+     * 1 or more: (positive): absolute stress.
+     * an intermediate value 0-1, e.g. 0.43 some stress.
+     * @return a value between 0 (or less) (no stress at all)
+     *         to 1 or more (very stressed).
+     */
     public float getStressLevel() { return this.stress; }
 
     private void load(String fileName) throws IOException, JSONException
@@ -670,6 +690,9 @@ public class ResultAnalyzer {
     private List<Float> dataHRInterp;
     private int filteredData;
     private float stress;
+    private float valueSTD;
+    private float valueRMS;
+    private float valueMeanFC;
 
     private static float freq = 4.0f;                   // Interpolation frequency in hz.
     private static float hammingFactor = 1.586f;
