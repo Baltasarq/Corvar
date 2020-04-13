@@ -23,12 +23,16 @@ public class ResultAnalyzer {
     private static float STRESS_LEVEL_A1 = 1.0f;
     private static float STRESS_LEVEL_A2 = 1.0f;
     private static float STRESS_LEVEL_A3 = 1.0f;
-    private static float STDn = 50.0f;          // ms
-    private static float RMSn = 40.0f;          // ms
-    private static float FCn = 60.0f;           // bpm
+
+    private static float DEFAULT_STDn = 50.0f;          // ms
+    private static float DEFAULT_RMSn = 40.0f;          // ms
+    private static float DEFAULT_BPMn = 60.0f;           // bpm
 
     public ResultAnalyzer(String fileName)
     {
+        this.valueSTDn = DEFAULT_STDn;
+        this.valueRMSn = DEFAULT_RMSn;
+        this.valueMeanBPMn = DEFAULT_BPMn;
         this.fileName = fileName;
     }
 
@@ -625,9 +629,12 @@ public class ResultAnalyzer {
     private void calculateStress()
     {
         this.stress = 0.33f * (
-                    STRESS_LEVEL_A1 * ( ( STDn - this.valueSTD ) / STDn )
-                    + STRESS_LEVEL_A2 * ( ( RMSn - this.valueRMS ) / RMSn )
-                    + STRESS_LEVEL_A3 * ( ( FCn - this.valueMeanFC ) / FCn ) );
+                    STRESS_LEVEL_A1 * ( ( this.valueSTDn - this.valueSTD )
+                                            / this.valueSTDn )
+                    + STRESS_LEVEL_A2 * ( ( this.valueRMSn - this.valueRMS )
+                                            / this.valueRMSn )
+                    + STRESS_LEVEL_A3 * ( ( this.valueMeanBPMn - this.valueMeanFC )
+                                            / this.valueMeanBPMn) );
     }
 
     public String getReport()
@@ -644,6 +651,48 @@ public class ResultAnalyzer {
      *         to 1 or more (very stressed).
      */
     public float getStressLevel() { return this.stress; }
+
+    /** @return the normal standard deviation. */
+    public float getSTDn()
+    {
+        return this.valueSTDn;
+    }
+
+    /** @return the normal RMS. */
+    public float getRMSn()
+    {
+        return this.valueRMSn;
+    }
+
+    /** @return the normal mean bpm. */
+    public float getMeanBPMn()
+    {
+        return this.valueMeanBPMn;
+    }
+
+    /** Sets a new normal standard deviation.
+      * @param v the new value.
+      */
+    public void setSTDn(float v)
+    {
+        this.valueSTDn = v;
+    }
+
+    /** Sets a new normal RMS.
+     * @param v the new value.
+     */
+    public void setRMSn(float v)
+    {
+        this.valueRMSn = v;
+    }
+
+    /** Sets a new normal bpm.
+     * @param v the new value.
+     */
+    public void setMeanBPMn(float v)
+    {
+        this.valueMeanBPMn = v;
+    }
 
     private void load(String fileName) throws IOException, JSONException
     {
@@ -693,6 +742,10 @@ public class ResultAnalyzer {
     private float valueSTD;
     private float valueRMS;
     private float valueMeanFC;
+    private float valueSTDn;
+    private float valueRMSn;
+    private float valueMeanBPMn;
+
 
     private static float freq = 4.0f;                   // Interpolation frequency in hz.
     private static float hammingFactor = 1.586f;
