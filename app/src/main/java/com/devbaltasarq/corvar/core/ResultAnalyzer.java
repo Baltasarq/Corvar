@@ -26,7 +26,7 @@ public class ResultAnalyzer {
 
     private static float DEFAULT_STDn = 50.0f;          // ms
     private static float DEFAULT_RMSn = 40.0f;          // ms
-    private static float DEFAULT_BPMn = 60.0f;           // bpm
+    private static float DEFAULT_BPMn = 60.0f;          // bpm
 
     public ResultAnalyzer(String fileName)
     {
