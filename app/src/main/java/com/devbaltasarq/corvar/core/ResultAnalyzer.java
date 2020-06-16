@@ -85,7 +85,7 @@ public class ResultAnalyzer {
                 // Calculate stress level
                 this.valueRMS = this.calculateRMSSD( this.dataRR );
                 this.valueSTD = this.calculateSTD( this.dataRR );
-                this.valueMeanFC = this.calculateMean( this.dataRR );
+                this.valueMeanFC = this.calculateMean( this.dataHR );
                 this.calculateStress();
 
                 // Summarizes all the results
