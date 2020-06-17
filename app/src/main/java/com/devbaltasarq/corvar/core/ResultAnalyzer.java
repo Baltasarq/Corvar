@@ -633,7 +633,7 @@ public class ResultAnalyzer {
                                             / this.valueSTDn )
                     + STRESS_LEVEL_A2 * ( ( this.valueRMSn - this.valueRMS )
                                             / this.valueRMSn )
-                    + STRESS_LEVEL_A3 * ( ( this.valueMeanBPMn - this.valueMeanFC )
+                    + STRESS_LEVEL_A3 * ( ( this.valueMeanFC - this.valueMeanBPMn )
                                             / this.valueMeanBPMn) );
     }
 
