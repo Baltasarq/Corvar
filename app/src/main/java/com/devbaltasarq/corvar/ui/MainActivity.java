@@ -1,4 +1,8 @@
+// Corvar (c) 2020 Baltasar MIT License <jbgarcia@uvigo.es>
+
+
 package com.devbaltasarq.corvar.ui;
+
 
 import android.Manifest;
 import android.app.Activity;
@@ -41,6 +45,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+
 
 public class MainActivity extends BasicActivity implements ScannerUI {
     private final static String LOG_TAG = MainActivity.class.getSimpleName();
