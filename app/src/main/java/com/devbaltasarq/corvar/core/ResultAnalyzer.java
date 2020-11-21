@@ -23,19 +23,14 @@ public class ResultAnalyzer {
     private static String LOG_TAG = ResultAnalyzer.class.getSimpleName();
 
     // Stress level calculation constants
-    private static float STRESS_LEVEL_A1 = 1.0f;
-    private static float STRESS_LEVEL_A2 = 1.0f;
-    private static float STRESS_LEVEL_A3 = 1.0f;
-
-    private static float DEFAULT_STDn = 50.0f;          // ms
-    private static float DEFAULT_RMSn = 40.0f;          // ms
-    private static float DEFAULT_BPMn = 60.0f;          // bpm
+    private static final float STRESS_LEVEL_A1 = -8.64502f;
+    private static final float STRESS_LEVEL_A2 = -0.01312f;
+    private static final float STRESS_LEVEL_A3 = 0.04295f;
+    private static final float STRESS_LEVEL_A4 = -0.01223f;
+    private static final float STRESS_LEVEL_INDEPENDENT_TERM = 5.97785f;
 
     public ResultAnalyzer(String fileName)
     {
-        this.valueSTDn = DEFAULT_STDn;
-        this.valueRMSn = DEFAULT_RMSn;
-        this.valueMeanBPMn = DEFAULT_BPMn;
         this.fileName = fileName;
     }
 
@@ -88,14 +83,11 @@ public class ResultAnalyzer {
                 // Calculate stress level
                 this.valueRMS = this.calculateRMSSD( this.dataRR );
                 this.valueSTD = this.calculateSTD( this.dataRR );
-                this.valueMeanFC = this.calculateMean( this.dataHR );
+                this.valuePNN50 = this.calculatePNN50( this.dataRR );
+                this.valueMeanBPM = this.calculateMean( this.dataHR );
+                this.valueMADRR = this.calculateMADRR( this.dataRR );               // Median
+                this.valueApEn = this.calculateApEn( this.dataRR, 2, 0.2f );  // Entropy
                 this.calculateStress();
-
-                // Calculate the median
-                this.madrr = this.calculateMADRR( this.dataRR );
-
-                // Calculate the entropy
-                this.apen = this.calculateApEn( this.dataRR, 2, 0.2f );
 
                 // Summarizes all the results
                 this.report += this.createReport();
@@ -105,6 +97,22 @@ public class ResultAnalyzer {
         } catch(IOException | JSONException exc)
         {
             this.report = "Error reading result for file: " + fileName + ": " + exc.getMessage();
+        }
+    }
+
+    private void load(String fileName) throws IOException, JSONException
+    {
+
+        try (FileInputStream fileInputStream = new FileInputStream( fileName );
+             InputStreamReader inputStreamReader = new InputStreamReader(
+                     fileInputStream,
+                     StandardCharsets.UTF_8.newDecoder());
+             BufferedReader bufferedReader = new BufferedReader(inputStreamReader))
+        {
+            this.result = Result.fromJSON( bufferedReader );
+        } catch (IOException | JSONException exc) {
+            Log.e(LOG_TAG, "Error reading result for file: " + fileName + " " + exc.getMessage());
+            throw exc;
         }
     }
 
@@ -255,13 +263,13 @@ public class ResultAnalyzer {
 
         TEXT.append( "<br/><h3>HRV time-domain results</h3>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>Mean RR (AVNN)</b>: " );
-        TEXT.append( String.format( Locale.getDefault(), "%.2f", this.valueMeanFC) );
+        TEXT.append( String.format( Locale.getDefault(), "%.2f", this.valueMeanBPM) );
         TEXT.append( " ms</p>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>STD RR (SDNN)</b>: " );
         TEXT.append( String.format( Locale.getDefault(), "%.2f", this.valueSTD) );
         TEXT.append( " ms</p>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>pNN50</b>: " );
-        TEXT.append( String.format( Locale.getDefault(), "%.2f", calculatePNN50(dataRR)) );
+        TEXT.append( String.format( Locale.getDefault(), "%.2f", this.valuePNN50 ) );
         TEXT.append( "%</p>" );
         TEXT.append( "<p>&nbsp;&nbsp;<b>rMSSD</b>: " );
         TEXT.append( String.format( Locale.getDefault(), "%.2f", this.valueRMS) );
@@ -302,19 +310,18 @@ public class ResultAnalyzer {
             TEXT.append( "<p>&nbsp;&nbsp;<b>LF/HF ratio</b>: --</p>" );
         }
 
-        TEXT.append( "<br/><h3>Stress level</h3>" );
-        TEXT.append( "<p>&nbsp;&nbsp;Stress (0 - 1): " );
-        TEXT.append( this.stress );
+        TEXT.append( "<br/><h3>Stress factors</h3>" );
+        TEXT.append( "<p>&nbsp;&nbsp;Stress probe: " );
+        TEXT.append( this.getProbeStress() );
+        TEXT.append( "<br/>&nbsp;&nbsp;&nbsp;&nbsp;(>0.5 indicates stress.)" );
         TEXT.append( "</p>" );
 
-        TEXT.append( "<br/><h3>MadRR</h3>" );
         TEXT.append( "<p>&nbsp;&nbsp;MadRR: " );
-        TEXT.append( this.madrr );
+        TEXT.append( this.valueMADRR );
         TEXT.append( "ms.</p>" );
 
-        TEXT.append( "<br/><h3>ApEn</h3>" );
         TEXT.append( "<p>&nbsp;&nbsp;ApEn: " );
-        TEXT.append( this.apen );
+        TEXT.append( this.valueApEn );
         TEXT.append( "ms.</p>" );
 
         if ( android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N ) {
@@ -735,98 +742,41 @@ public class ResultAnalyzer {
     /** Calculates the stress level, resulting in a value between -1 and >1. */
     private void calculateStress()
     {
-        this.stress = 0.33f * (
-                    STRESS_LEVEL_A1 * ( ( this.valueSTDn - this.valueSTD )
-                                            / this.valueSTDn )
-                    + STRESS_LEVEL_A2 * ( ( this.valueRMSn - this.valueRMS )
-                                            / this.valueRMSn )
-                    + STRESS_LEVEL_A3 * ( ( this.valueMeanFC - this.valueMeanBPMn )
-                                            / this.valueMeanBPMn) );
+        final float TERM1 = STRESS_LEVEL_A1 * this.valueApEn;
+        final float TERM2 = STRESS_LEVEL_A2 * this.valueMADRR;
+        final float TERM3 = STRESS_LEVEL_A3 * this.valueMeanBPM;
+        final float TERM4 = STRESS_LEVEL_A4 * this.valuePNN50;
+
+        this.valueStress = TERM1 + TERM2 + TERM3 + TERM4 + STRESS_LEVEL_INDEPENDENT_TERM;
     }
 
-    public String getReport()
+
+    /** @return a value between 0 and 1. Values > .5 indicate stress. */
+    public float getProbeStress()
     {
-        return this.report;
+        final float ODDS_RATIO = (float) Math.exp( this.valueStress );
+
+        return ( ODDS_RATIO / ( ODDS_RATIO + 1 ) );
     }
 
-    /**
-     * Returns the calculated stress
-     * 0 or less (negative) : no stress at all.
-     * 1 or more: (positive): absolute stress.
-     * an intermediate value 0-1, e.g. 0.43 some stress.
-     * @return a value between 0 (or less) (no stress at all)
-     *         to 1 or more (very stressed).
-     */
-    public float getStressLevel() { return this.stress; }
+    /** @return a value indicating the stress level. */
+    public float getStressLevel() { return this.valueStress; }
 
     /** @return the median of RR (MADRR value), in ms. */
     public float getMadRR()
     {
-        return this.madrr;
+        return this.valueMADRR;
     }
 
     /** @return the entropy. */
     public float getApEn()
     {
-        return this.apen;
+        return this.valueApEn;
     }
 
-    /** @return the normal standard deviation. */
-    public float getSTDn()
+    public String getReport()
     {
-        return this.valueSTDn;
-    }
-
-    /** @return the normal RMS. */
-    public float getRMSn()
-    {
-        return this.valueRMSn;
-    }
-
-    /** @return the normal mean bpm. */
-    public float getMeanBPMn()
-    {
-        return this.valueMeanBPMn;
-    }
-
-    /** Sets a new normal standard deviation.
-      * @param v the new value.
-      */
-    public void setSTDn(float v)
-    {
-        this.valueSTDn = v;
-    }
-
-    /** Sets a new normal RMS.
-     * @param v the new value.
-     */
-    public void setRMSn(float v)
-    {
-        this.valueRMSn = v;
-    }
-
-    /** Sets a new normal bpm.
-     * @param v the new value.
-     */
-    public void setMeanBPMn(float v)
-    {
-        this.valueMeanBPMn = v;
-    }
-
-    private void load(String fileName) throws IOException, JSONException
-    {
-
-        try (FileInputStream fileInputStream = new FileInputStream(fileName);
-             InputStreamReader inputStreamReader = new InputStreamReader(
-                fileInputStream,
-                StandardCharsets.UTF_8.newDecoder());
-             BufferedReader bufferedReader = new BufferedReader(inputStreamReader))
-        {
-            this.result = Result.fromJSON( bufferedReader );
-        } catch (IOException | JSONException exc) {
-            Log.e(LOG_TAG, "Error reading result for file: " + fileName + " " + exc.getMessage());
-            throw exc;
-        }
+        return this.report;
     }
 
     private String createHeader()
@@ -857,16 +807,13 @@ public class ResultAnalyzer {
     private List<Float> dataHRInterpX;
     private List<Float> dataHRInterp;
     private int filteredData;
-    private float stress;
-    private float madrr;
-    private float apen;
+    private float valueStress;
+    private float valueMADRR;
+    private float valueApEn;
     private float valueSTD;
     private float valueRMS;
-    private float valueMeanFC;
-    private float valueSTDn;
-    private float valueRMSn;
-    private float valueMeanBPMn;
-
+    private float valueMeanBPM;
+    private float valuePNN50;
 
     private static float freq = 4.0f;                   // Interpolation frequency in hz.
     private static float hammingFactor = 1.586f;
