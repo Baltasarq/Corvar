@@ -1,5 +1,5 @@
 # Corvar
-The simplest posible application for acquiring HR data and analyising its HRV and stress level. There is a companion software, CorVarJar](https://github.com/Baltasarq/CorvarJar/), that corresponds with the result analyzing section of this app in order to obtain the HRV and the stress level from data obtained using an HR band.
+The simplest posible application for acquiring HR data and analyising its HRV and stress level. There is a companion software, [CorVarJar](https://github.com/Baltasarq/CorvarJar/), that corresponds with the result analyzing section of this app in order to obtain the HRV and the stress level from data obtained using an HR band.
 
 Please check this project's wiki for more details.
 
